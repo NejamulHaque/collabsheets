@@ -49,6 +49,52 @@ app.use('/notifications', notificationRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'CollabSheets API is alive!' }));
 
+// ---------- Irus AI proxy (CORS-safe backend relay) ----------
+app.post('/api/irus-ai', async (req, res) => {
+  const b = req.body || {};
+  const key = b.key || b.apiKey || b.api_key || req.headers['x-api-key'] || '';
+  const prompt = b.prompt || b.message || b.question || b.text || '';
+  const history = Array.isArray(b.history) ? b.history : [];
+  if (!key) return res.status(400).json({ error: 'Missing API key' });
+  if (!prompt) return res.status(400).json({ error: 'Missing prompt' });
+
+  try {
+    let answerText = '';
+
+    if (key.startsWith('sk-or-') || b.provider === 'openrouter') {
+      // OpenRouter
+      const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+        body: JSON.stringify({
+          model: b.model || 'meta-llama/llama-3.1-8b-instruct:free',
+          messages: [...history, { role: 'user', content: prompt }],
+        }),
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j?.error?.message || 'OpenRouter error');
+      answerText = j?.choices?.[0]?.message?.content || '';
+    } else {
+      // Default: Google Gemini (free tier key from aistudio.google.com)
+      const contents = history
+        .map(h => ({ role: h.role === 'assistant' ? 'model' : 'user', parts: [{ text: h.content || h.text || '' }] }))
+        .concat([{ role: 'user', parts: [{ text: prompt }] }]);
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${b.model || 'gemini-1.5-flash'}:generateContent?key=${encodeURIComponent(key)}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents }) }
+      );
+      const j = await r.json();
+      if (!r.ok) throw new Error(j?.error?.message || 'Gemini error');
+      answerText = j?.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
+    }
+
+    // Return every common field name so any frontend parser works
+    res.json({ reply: answerText, text: answerText, answer: answerText, output: answerText, message: answerText });
+  } catch (e) {
+    res.status(502).json({ error: String(e.message || e) });
+  }
+});
+
 // ---------- Serve the built React app (production) ----------
 const clientDist = path.join(__dirname, '..', 'client', 'dist');
 app.use(express.static(clientDist));
