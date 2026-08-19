@@ -257,7 +257,23 @@ export default function Landing() {
             <Bot style={{ color: 'var(--primary)' }} /><h3>Irus AI <ExternalLink size={14} /></h3>
             <p>My AI chatbot project — a smart companion for answers, ideas and productivity.</p>
           </a>
-          <a className="feature-card glass" style={{ textDecoration: 'none', color: 'inherit' }} href="https://github.com/" target="_blank" rel="noreferrer">
+          <a className="feature-card glass" style={{ textDecoration: 'none', color: 'inherit' }} href="https://nestfy-beta.vercel.app/" target="_blank" rel="noreferrer">
+            <Bot style={{ color: 'var(--primary)' }} /><h3>Nestfy <ExternalLink size={14} /></h3>
+            <p>A production-grade, advance personal-finance platform.</p>
+          </a>
+          <a className="feature-card glass" style={{ textDecoration: 'none', color: 'inherit' }} href="https://digital-lens.vercel.app/" target="_blank" rel="noreferrer">
+            <Bot style={{ color: 'var(--primary)' }} /><h3>DigitalLens <ExternalLink size={14} /></h3>
+            <p>Next-Generation AI News Intelligence Platform Real-time news aggregation with sentiment analysis, AI summaries, and multi-language support.</p>
+          </a>
+          <a className="feature-card glass" style={{ textDecoration: 'none', color: 'inherit' }} href="https://builderr-ai.vercel.app/login" target="_blank" rel="noreferrer">
+            <Bot style={{ color: 'var(--primary)' }} /><h3>Portfolio Builder <ExternalLink size={14} /></h3>
+            <p>Create your own professional portfolio website in minutes using this AI-powered Portfolio Builder. Just fill in your information, and the app generates a live, responsive, and elegant portfolio you can preview, export, or host!</p>
+          </a>
+          <a className="feature-card glass" style={{ textDecoration: 'none', color: 'inherit' }} href="https://proresume-six.vercel.app/" target="_blank" rel="noreferrer">
+            <Bot style={{ color: 'var(--primary)' }} /><h3>Resume Builder <ExternalLink size={14} /></h3>
+            <p>Build ATS-friendly professional resumes in minutes — free forever.</p>
+          </a>
+          <a className="feature-card glass" style={{ textDecoration: 'none', color: 'inherit' }} href="https://github.com/NejamulHaque" target="_blank" rel="noreferrer">
             <Globe style={{ color: 'var(--accent)' }} /><h3>More Projects <ExternalLink size={14} /></h3>
             <p>Explore my other open-source work and experiments.</p>
           </a>
