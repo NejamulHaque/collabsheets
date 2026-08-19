@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /documents
+Disallow: /admin
+Disallow: /profile
+
+Sitemap: https://collabsheets.app/sitemap.xml
