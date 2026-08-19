@@ -49,50 +49,56 @@ app.use('/notifications', notificationRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'CollabSheets API is alive!' }));
 
-// ---------- Irus AI proxy (CORS-safe backend relay) ----------
+// ---------- Irus AI proxy (relays to YOUR irus-ai.onrender.com service) ----------
 app.post('/api/irus-ai', async (req, res) => {
   const b = req.body || {};
   const key = b.key || b.apiKey || b.api_key || req.headers['x-api-key'] || '';
   const prompt = b.prompt || b.message || b.question || b.text || '';
-  const history = Array.isArray(b.history) ? b.history : [];
-  if (!key) return res.status(400).json({ error: 'Missing API key' });
   if (!prompt) return res.status(400).json({ error: 'Missing prompt' });
 
-  try {
-    let answerText = '';
-
-    if (key.startsWith('sk-or-') || b.provider === 'openrouter') {
-      // OpenRouter
-      const r = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-        body: JSON.stringify({
-          model: b.model || 'meta-llama/llama-3.1-8b-instruct:free',
-          messages: [...history, { role: 'user', content: prompt }],
-        }),
-      });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j?.error?.message || 'OpenRouter error');
-      answerText = j?.choices?.[0]?.message?.content || '';
-    } else {
-      // Default: Google Gemini (free tier key from aistudio.google.com)
-      const contents = history
-        .map(h => ({ role: h.role === 'assistant' ? 'model' : 'user', parts: [{ text: h.content || h.text || '' }] }))
-        .concat([{ role: 'user', parts: [{ text: prompt }] }]);
-      const r = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${b.model || 'gemini-1.5-flash'}:generateContent?key=${encodeURIComponent(key)}`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents }) }
-      );
-      const j = await r.json();
-      if (!r.ok) throw new Error(j?.error?.message || 'Gemini error');
-      answerText = j?.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
-    }
-
-    // Return every common field name so any frontend parser works
-    res.json({ reply: answerText, text: answerText, answer: answerText, output: answerText, message: answerText });
-  } catch (e) {
-    res.status(502).json({ error: String(e.message || e) });
+  const payload = {
+    message: prompt, prompt, query: prompt, input: prompt, text: prompt,
+    history: Array.isArray(b.history) ? b.history : [],
+  };
+  const headers = { 'Content-Type': 'application/json' };
+  if (key) {
+    headers['x-api-key'] = key;
+    headers['api-key'] = key;
+    headers['Authorization'] = `Bearer ${key}`;
   }
+
+  const endpoints = [
+    'https://irus-ai.onrender.com/api/chat',
+    'https://irus-ai.onrender.com/chat',
+    'https://irus-ai.onrender.com/api/generate',
+    'https://irus-ai.onrender.com/generate',
+  ];
+
+  let lastErr = null;
+  for (const url of endpoints) {
+    try {
+      const r = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(30000),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        lastErr = new Error(data?.error || data?.message || `Irus AI HTTP ${r.status}`);
+        if (r.status === 404) continue; // wrong path → try next
+        break;                          // auth/other error → stop
+      }
+      const answer = data?.reply || data?.answer || data?.response || data?.message ||
+                     data?.output || data?.result || data?.text || data?.content ||
+                     (typeof data === 'string' ? data : '');
+      return res.json({ reply: answer, text: answer, answer, output: answer, message: answer, ok: true });
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+
+  res.status(502).json({ error: lastErr?.message || 'Irus AI service unavailable' });
 });
 
 // ---------- Serve the built React app (production) ----------
