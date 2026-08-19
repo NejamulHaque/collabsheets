@@ -52,13 +52,12 @@ app.get('/health', (req, res) => res.json({ status: 'CollabSheets API is alive!'
 // ---------- Serve the built React app (production) ----------
 const clientDist = path.join(__dirname, '..', 'client', 'dist');
 app.use(express.static(clientDist));
-app.get('*', (req, res) => {
+app.get('/{*splat}', (req, res) => {
   if (req.path.startsWith('/api')) return res.status(404).json({ error: 'Not found' });
   res.sendFile(path.join(clientDist, 'index.html'), (err) => {
     if (err) res.status(404).json({ error: 'Frontend not built. Run: cd client && npm run build' });
   });
 });
-
 // ---------- WebSocket #1: Yjs document sync ----------
 const wss = new WebSocketServer({ noServer: true });
 
