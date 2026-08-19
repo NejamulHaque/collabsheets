@@ -49,56 +49,93 @@ app.use('/notifications', notificationRoutes);
 
 app.get('/health', (req, res) => res.json({ status: 'CollabSheets API is alive!' }));
 
-// ---------- Irus AI proxy (relays to YOUR irus-ai.onrender.com service) ----------
+// ---------- Irus AI proxy (exact endpoint: /api/v1/chat) ----------
 app.post('/api/irus-ai', async (req, res) => {
   const b = req.body || {};
   const key = b.key || b.apiKey || b.api_key || req.headers['x-api-key'] || '';
   const prompt = b.prompt || b.message || b.question || b.text || '';
+  const history = Array.isArray(b.history) ? b.history : [];
+  
   if (!prompt) return res.status(400).json({ error: 'Missing prompt' });
+  if (!key) return res.status(400).json({ error: 'Missing Irus AI API key' });
 
-  const payload = {
-    message: prompt, prompt, query: prompt, input: prompt, text: prompt,
-    history: Array.isArray(b.history) ? b.history : [],
-  };
-  const headers = { 'Content-Type': 'application/json' };
-  if (key) {
-    headers['x-api-key'] = key;
-    headers['api-key'] = key;
-    headers['Authorization'] = `Bearer ${key}`;
-  }
+  try {
+    const url = 'https://irus-ai.onrender.com/api/v1/chat';
+    
+    // Try multiple request formats (Flask apps vary in what they expect)
+    const attempts = [
+      // Format 1: JSON body with message field
+      {
+        headers: { 'Content-Type': 'application/json', 'x-api-key': key },
+        body: { message: prompt, api_key: key, history },
+      },
+      // Format 2: JSON body with prompt field
+      {
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+        body: { prompt, key, history },
+      },
+      // Format 3: JSON body with query field
+      {
+        headers: { 'Content-Type': 'application/json', 'api-key': key },
+        body: { query: prompt, apiKey: key },
+      },
+    ];
 
-  const endpoints = [
-    'https://irus-ai.onrender.com/api/chat',
-    'https://irus-ai.onrender.com/chat',
-    'https://irus-ai.onrender.com/api/generate',
-    'https://irus-ai.onrender.com/generate',
-  ];
+    let lastErr = null;
+    for (let i = 0; i < attempts.length; i++) {
+      const attempt = attempts[i];
+      try {
+        const r = await fetch(url, {
+          method: 'POST',
+          headers: attempt.headers,
+          body: JSON.stringify(attempt.body),
+          signal: AbortSignal.timeout(45000),
+        });
 
-  let lastErr = null;
-  for (const url of endpoints) {
-    try {
-      const r = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(30000),
-      });
-      const data = await r.json().catch(() => ({}));
-      if (!r.ok) {
-        lastErr = new Error(data?.error || data?.message || `Irus AI HTTP ${r.status}`);
-        if (r.status === 404) continue; // wrong path → try next
-        break;                          // auth/other error → stop
+        const raw = await r.text();
+        let data = {};
+        try { data = JSON.parse(raw); } catch { data = { reply: raw }; }
+
+        console.log(`🤖 Irus attempt ${i + 1} ${url} → ${r.status}`);
+
+        if (!r.ok) {
+          lastErr = new Error(data?.error || data?.message || `HTTP ${r.status}`);
+          continue; // Try next format
+        }
+
+        // Extract answer from any response format
+        const answer = data?.reply || data?.answer || data?.response || 
+                       data?.message || data?.output || data?.result || 
+                       data?.text || data?.content ||
+                       (typeof data === 'string' ? data : '');
+
+        if (!answer) {
+          lastErr = new Error('Empty response from Irus AI');
+          continue;
+        }
+
+        return res.json({
+          ok: true,
+          reply: answer,
+          answer,
+          response: answer,
+          message: answer,
+          output: answer,
+          provider: 'irus-ai',
+          endpoint: url,
+          data,
+        });
+      } catch (e) {
+        lastErr = e;
       }
-      const answer = data?.reply || data?.answer || data?.response || data?.message ||
-                     data?.output || data?.result || data?.text || data?.content ||
-                     (typeof data === 'string' ? data : '');
-      return res.json({ reply: answer, text: answer, answer, output: answer, message: answer, ok: true });
-    } catch (e) {
-      lastErr = e;
     }
-  }
 
-  res.status(502).json({ error: lastErr?.message || 'Irus AI service unavailable' });
+    throw lastErr || new Error('All request formats failed');
+
+  } catch (err) {
+    console.error('❌ Irus AI error:', err.message);
+    res.status(502).json({ ok: false, error: err.message, provider: 'irus-ai' });
+  }
 });
 
 // ---------- Serve the built React app (production) ----------
