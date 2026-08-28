@@ -1,98 +1,218 @@
 import { useState } from 'react';
+import { Sparkles, X, Send, Copy, Download, Bot, Wand2, Lightbulb, Check } from 'lucide-react';
 import { API } from '../store/authStore';
-import { Sparkles, X, Send, Copy, Download, Crown, Bot } from 'lucide-react';
 
-export default function AIPanel({ getContext, onInsert, tier }) {
+export default function AIPanel({ getContext, onInsert, mode = 'code' }) {
   const [open, setOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [copiedIdx, setCopiedIdx] = useState(null);
+  const [insertedIdx, setInsertedIdx] = useState(null);
 
-  const quickActions = ['Explain this', 'Refactor this', 'Find bugs', 'Add comments'];
+  const getQuickActions = () => {
+    if (mode === 'code') {
+      return [
+        { label: 'Explain this code', prompt: 'Explain what this code does in clear, bulleted steps.' },
+        { label: 'Refactor & Clean', prompt: 'Refactor this code to follow best practices, clean design, and optimal performance.' },
+        { label: 'Generate Unit Tests', prompt: 'Write comprehensive unit tests with edge cases for this code.' },
+        { label: 'Find Bugs & Security', prompt: 'Identify any potential bugs, edge cases, or security risks in this code.' },
+        { label: 'Add Documentation', prompt: 'Add clean docstrings and comments explaining this code.' },
+      ];
+    }
+    if (mode === 'richtext') {
+      return [
+        { label: 'Draft Intro & Outline', prompt: 'Draft a professional introduction and structured outline for this topic.' },
+        { label: 'Rewrite Professionally', prompt: 'Rewrite the following text with an executive, professional tone.' },
+        { label: 'Summarize Key Takeaways', prompt: 'Provide a concise summary with top 3 key takeaways.' },
+        { label: 'Polish Grammar & Style', prompt: 'Fix grammar, punctuation, and flow for maximum clarity.' },
+      ];
+    }
+    if (mode === 'sheets') {
+      return [
+        { label: 'Create Formula', prompt: 'Write an Excel formula to calculate total sum where condition is met.' },
+        { label: 'Analyze Spreadsheet Data', prompt: 'Analyze this spreadsheet data and identify key trends and metrics.' },
+        { label: 'Generate Sample Sales Data', prompt: 'Generate 5 rows of sample quarterly sales data with Region, Units, Revenue.' },
+      ];
+    }
+    if (mode === 'slides') {
+      return [
+        { label: 'Generate 5-Slide Deck', prompt: 'Create a 5-slide presentation deck structure with titles and 3 bullet points each.' },
+        { label: 'Draft Speaker Notes', prompt: 'Write engaging speaker notes for the current slide talking points.' },
+        { label: 'Turn into Pitch Deck', prompt: 'Structure this topic into a concise startup investor pitch deck.' },
+      ];
+    }
+    return [
+      { label: 'Explain this', prompt: 'Explain the current content.' },
+      { label: 'Summarize', prompt: 'Summarize this content.' },
+    ];
+  };
 
-  const send = async (text) => {
-    const finalPrompt = text || prompt;
+  const quickActions = getQuickActions();
+
+  const send = async (customPrompt) => {
+    const finalPrompt = customPrompt || prompt;
     if (!finalPrompt.trim() || loading) return;
+
     setPrompt('');
-    setMessages((m) => [...m, { role: 'user', content: finalPrompt }]);
+    setMessages(m => [...m, { role: 'user', content: finalPrompt }]);
     setLoading(true);
+
     try {
-      const { data } = await API.post('/ai/generate', { prompt: finalPrompt, context: getContext() });
-      const reply = data.response || data.answer || data.message || data.reply || (typeof data === 'string' ? data : JSON.stringify(data));
-      setMessages((m) => [...m, { role: 'ai', content: reply }]);
+      const context = getContext ? getContext() : '';
+      const { data } = await API.post('/ai/generate', {
+        prompt: finalPrompt,
+        context,
+      });
+
+      const reply = data?.response || data?.answer || data?.message || 'Irus AI response received.';
+      setMessages(m => [...m, { role: 'ai', content: reply }]);
     } catch (err) {
-      const msg = err.response?.status === 429
-        ? '⚠️ Daily AI limit reached (5/5). Upgrade to Pro for unlimited AI!'
-        : err.response?.data?.error || 'Irus AI is sleeping or unavailable. Try again in a few seconds.';
-      setMessages((m) => [...m, { role: 'ai', content: msg }]);
+      setMessages(m => [
+        ...m,
+        {
+          role: 'ai',
+          content: `⚠️ Could not reach Irus AI backend. Running in local fallback mode:\n\n` +
+            `Here is a suggested solution for "${finalPrompt}":\n` +
+            `- Ensure all parameters and imports are defined.\n- Check logic flow and edge cases.\n- For documents and slides, structure content with clear headings.`,
+        },
+      ]);
     }
     setLoading(false);
   };
 
+  const handleCopy = (text, idx) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIdx(idx);
+    setTimeout(() => setCopiedIdx(null), 2000);
+  };
+
+  const handleInsert = (text, idx) => {
+    if (onInsert) {
+      onInsert(text);
+      setInsertedIdx(idx);
+      setTimeout(() => setInsertedIdx(null), 2000);
+    }
+  };
+
   return (
     <>
-      <button onClick={() => setOpen(!open)} className="btn btn-primary" title="Irus AI Assistant"
+      {/* Floating AI Trigger */}
+      <button
+        onClick={() => setOpen(!open)}
+        className="ai-fab btn btn-primary"
+        title="Irus AI Copilot"
         style={{
-          position: 'fixed', bottom: '24px', left: '24px', zIndex: 100,
-          width: '56px', height: '56px', borderRadius: '50%',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          boxShadow: '0 8px 30px rgba(139, 92, 246, 0.4)',
-        }}>
-        {open ? <X size={22} /> : <Sparkles size={22} />}
+          width: '48px',
+          height: '48px',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 8px 30px rgba(124, 92, 255, 0.45)',
+        }}
+      >
+        {open ? <X size={20} /> : <Sparkles size={20} />}
       </button>
 
+      {/* Irus AI Chat Modal / Drawer */}
       {open && (
-        <div className="glass" style={{
-          position: 'fixed', bottom: '96px', left: '24px', zIndex: 100,
-          width: '380px', maxWidth: 'calc(100vw - 48px)', height: '520px',
-          display: 'flex', flexDirection: 'column', overflow: 'hidden',
-          background: 'var(--glass-strong)',
-        }}>
-          <div style={{ padding: '16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Bot size={20} style={{ color: 'var(--accent)' }} />
-            <div>
-              <div style={{ fontWeight: 'bold' }}>Irus AI</div>
-              <div style={{ fontSize: '12px', color: 'var(--muted)' }}>{tier === 'pro' ? 'Pro • Unlimited requests' : 'Free • 5 requests/day'}</div>
+        <div className="glass irus-copilot-window">
+          {/* Header */}
+          <div className="copilot-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div className="copilot-bot-badge">
+                <Bot size={18} />
+              </div>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 14 }}>Irus AI Copilot</div>
+                <div style={{ fontSize: 11, color: 'var(--muted)' }}>
+                  {mode === 'code' ? '💻 Coding Assistant' : mode === 'richtext' ? '📄 Word Writing Assistant' : mode === 'sheets' ? '📊 Formula & Data Assistant' : '📽 Presentation Generator'}
+                </div>
+              </div>
             </div>
-            {tier !== 'pro' && (
-              <button className="btn btn-ghost" style={{ marginLeft: 'auto', padding: '6px 10px', fontSize: '12px' }}><Crown size={12} /> Upgrade</button>
-            )}
+            <button className="vscode-icon-btn" onClick={() => setOpen(false)}><X size={15} /></button>
           </div>
 
-          <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {/* Messages */}
+          <div className="copilot-messages">
             {messages.length === 0 && (
-              <div style={{ color: 'var(--muted)', fontSize: '14px', textAlign: 'center', marginTop: '40px' }}>
-                Ask Irus AI anything about your document.<br />Try a quick action below! 👇
+              <div className="copilot-welcome">
+                <Wand2 size={28} style={{ color: 'var(--accent)', margin: '0 auto 10px' }} />
+                <div style={{ fontWeight: 700, fontSize: 14 }}>How can I help you today?</div>
+                <div style={{ color: 'var(--muted)', fontSize: 12, marginTop: 4 }}>
+                  Ask questions, generate code, write documents, or tap one of the smart actions below!
+                </div>
               </div>
             )}
+
             {messages.map((m, i) => (
-              <div key={i} style={{
-                alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start',
-                background: m.role === 'user' ? 'linear-gradient(135deg, var(--primary), var(--accent))' : 'rgba(255,255,255,0.08)',
-                padding: '10px 14px', borderRadius: '14px', maxWidth: '85%',
-                fontSize: '14px', whiteSpace: 'pre-wrap', lineHeight: 1.5,
-              }}>
-                {m.content}
-                {m.role === 'ai' && i === messages.length - 1 && (
-                  <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
-                    <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: '12px' }} onClick={() => onInsert(m.content)}><Download size={12} /> Insert</button>
-                    <button className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: '12px' }} onClick={() => navigator.clipboard.writeText(m.content)}><Copy size={12} /> Copy</button>
+              <div
+                key={i}
+                className={`copilot-bubble ${m.role === 'user' ? 'user' : 'ai'}`}
+              >
+                <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{m.content}</div>
+                {m.role === 'ai' && (
+                  <div className="bubble-actions" style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+                    <button
+                      className="btn btn-ghost"
+                      style={{ padding: '4px 10px', fontSize: 11, background: insertedIdx === i ? 'rgba(16, 185, 129, 0.2)' : undefined, color: insertedIdx === i ? '#10b981' : undefined }}
+                      onClick={() => handleInsert(m.content, i)}
+                    >
+                      {insertedIdx === i ? <Check size={11} /> : <Download size={11} />}
+                      <span>{insertedIdx === i ? 'Inserted! ✓' : 'Insert into Doc'}</span>
+                    </button>
+                    <button
+                      className="btn btn-ghost"
+                      style={{ padding: '4px 10px', fontSize: 11, background: copiedIdx === i ? 'rgba(16, 185, 129, 0.2)' : undefined, color: copiedIdx === i ? '#10b981' : undefined }}
+                      onClick={() => handleCopy(m.content, i)}
+                    >
+                      {copiedIdx === i ? <Check size={11} /> : <Copy size={11} />}
+                      <span>{copiedIdx === i ? 'Copied! ✓' : 'Copy'}</span>
+                    </button>
                   </div>
                 )}
               </div>
             ))}
-            {loading && <div style={{ color: 'var(--muted)', fontSize: '13px' }}>Irus is thinking…</div>}
+
+            {loading && (
+              <div className="copilot-bubble ai" style={{ color: 'var(--muted)', fontStyle: 'italic' }}>
+                Irus AI is thinking & crafting your response…
+              </div>
+            )}
           </div>
 
-          <div style={{ padding: '0 16px 10px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-            {quickActions.map((qa) => (
-              <button key={qa} className="btn btn-ghost" style={{ padding: '4px 10px', fontSize: '12px' }} onClick={() => send(qa)}>{qa}</button>
+          {/* Smart Quick Actions */}
+          <div className="copilot-quick-actions">
+            {quickActions.map((qa, i) => (
+              <button
+                key={i}
+                className="btn btn-ghost quick-chip"
+                onClick={() => send(qa.prompt)}
+              >
+                <Lightbulb size={11} style={{ color: 'var(--accent)' }} />
+                <span>{qa.label}</span>
+              </button>
             ))}
           </div>
 
-          <div style={{ padding: '12px', borderTop: '1px solid var(--border)', display: 'flex', gap: '8px' }}>
-            <input className="input" placeholder="Ask Irus AI…" value={prompt} onChange={e => setPrompt(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} />
-            <button className="btn btn-primary" style={{ padding: '10px' }} onClick={() => send()} disabled={loading}><Send size={16} /></button>
+          {/* Input Box */}
+          <div className="copilot-input-area">
+            <input
+              className="vscode-input"
+              placeholder={`Ask Irus AI about ${mode}...`}
+              value={prompt}
+              onChange={e => setPrompt(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && send()}
+            />
+            <button
+              className="btn btn-primary"
+              style={{ padding: '8px 12px' }}
+              onClick={() => send()}
+              disabled={loading || !prompt.trim()}
+            >
+              <Send size={14} />
+            </button>
           </div>
         </div>
       )}
