@@ -60,7 +60,9 @@ export default function RightSidebar({ docId, onRestore }) {
       </button>
 
       {isOpen && (
-        <aside className="right-sidebar glass">
+        <>
+          <div className="right-sidebar-backdrop" onClick={() => setIsOpen(false)} />
+          <aside className="right-sidebar glass">
           <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', borderBottom: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', gap: 8 }}>
               <button className={`btn btn-sm ${tab === 'chat' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setTab('chat')}>💬 Chat</button>
@@ -122,7 +124,8 @@ export default function RightSidebar({ docId, onRestore }) {
               ))}
             </div>
           )}
-        </aside>
+          </aside>
+        </>
       )}
     </>
   );

@@ -299,7 +299,7 @@ export default function Editor() {
             title="Visual Studio Code"
           >
             <Code2 size={15} />
-            <span>VS Code</span>
+            <span className="app-pill-label">VS Code</span>
           </button>
 
           <button
@@ -308,7 +308,7 @@ export default function Editor() {
             title="Microsoft Word"
           >
             <FileText size={15} />
-            <span>Word</span>
+            <span className="app-pill-label">Word</span>
           </button>
 
           <button
@@ -317,7 +317,7 @@ export default function Editor() {
             title="Microsoft Excel"
           >
             <Sheet size={15} />
-            <span>Excel</span>
+            <span className="app-pill-label">Excel</span>
           </button>
 
           <button
@@ -326,7 +326,7 @@ export default function Editor() {
             title="Microsoft PowerPoint"
           >
             <Presentation size={15} />
-            <span>PowerPoint</span>
+            <span className="app-pill-label">PowerPoint</span>
           </button>
 
           <button
@@ -335,7 +335,7 @@ export default function Editor() {
             title="Interactive Whiteboard"
           >
             <Brush size={15} />
-            <span>Board</span>
+            <span className="app-pill-label">Board</span>
           </button>
         </div>
 

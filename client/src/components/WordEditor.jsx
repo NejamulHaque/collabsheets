@@ -13,7 +13,7 @@ export default function WordEditor({
   onOpenTemplates,
   onPrint,
 }) {
-  const [showOutline, setShowOutline] = useState(true);
+  const [showOutline, setShowOutline] = useState(() => typeof window !== 'undefined' && window.innerWidth > 768);
   const [viewMode, setViewMode] = useState('print'); // 'print', 'web', 'focus'
   const [isEditingHF, setIsEditingHF] = useState(false); // Header & Footer edit mode
 
@@ -95,9 +95,12 @@ export default function WordEditor({
       <div className="word-workspace-body">
         {/* Left Navigation Pane */}
         {showOutline && (
-          <div className="word-outline-pane">
-            <WordNavigationPane editor={editor} />
-          </div>
+          <>
+            <div className="word-outline-backdrop" onClick={() => setShowOutline(false)} />
+            <div className="word-outline-pane">
+              <WordNavigationPane editor={editor} />
+            </div>
+          </>
         )}
 
         {/* Center Page Canvas Area */}

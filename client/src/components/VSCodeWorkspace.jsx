@@ -129,11 +129,18 @@ export default function VSCodeWorkspace({
   const [codeLang, setCodeLang] = useState('python');
   const [langSupport, setLangSupport] = useState(null);
   const [activeActivity, setActiveActivity] = useState('explorer');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [bottomDockOpen, setBottomDockOpen] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768);
+  const [bottomDockOpen, setBottomDockOpen] = useState(() => typeof window !== 'undefined' && window.innerWidth > 768);
   const [bottomTab, setBottomTab] = useState('terminal');
   const [dockHeight] = useState(230);
   const [versionCounter, setVersionCounter] = useState(0);
+
+  const selectFile = (fileName) => {
+    setActiveFile(fileName);
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+      setSidebarCollapsed(true);
+    }
+  };
 
   // Folder collapse state
   const [collapsedFolders, setCollapsedFolders] = useState({});
@@ -902,92 +909,94 @@ export default function VSCodeWorkspace({
 
       {/* 2️⃣ PRIMARY SIDEBAR (EXPLORER / SEARCH / GIT / DEBUG / EXTENSIONS) */}
       {!sidebarCollapsed && (
-        <div className="vscode-sidebar">
-          {/* Header */}
-          <div className="vscode-sidebar-header">
-            <span>{activeActivity.toUpperCase()}</span>
-            <div style={{ display: 'flex', gap: 4 }}>
-              {activeActivity === 'explorer' && (
-                <>
-                  <button className="vscode-icon-btn" title="New File" onClick={() => addFile()}><FilePlus size={14} /></button>
-                  <button className="vscode-icon-btn" title="New Folder" onClick={addFolder}><FolderPlus size={14} /></button>
-                  <button className="vscode-icon-btn" title="Collapse All" onClick={() => {}}><ChevronDown size={14} /></button>
-                </>
-              )}
-              <button className="vscode-icon-btn" title="Close Sidebar" onClick={() => setSidebarCollapsed(true)}><X size={14} /></button>
+        <>
+          <div className="vscode-sidebar-backdrop" onClick={() => setSidebarCollapsed(true)} />
+          <div className="vscode-sidebar">
+            {/* Header */}
+            <div className="vscode-sidebar-header">
+              <span>{activeActivity.toUpperCase()}</span>
+              <div style={{ display: 'flex', gap: 4 }}>
+                {activeActivity === 'explorer' && (
+                  <>
+                    <button className="vscode-icon-btn" title="New File" onClick={() => addFile()}><FilePlus size={14} /></button>
+                    <button className="vscode-icon-btn" title="New Folder" onClick={addFolder}><FolderPlus size={14} /></button>
+                    <button className="vscode-icon-btn" title="Collapse All" onClick={() => {}}><ChevronDown size={14} /></button>
+                  </>
+                )}
+                <button className="vscode-icon-btn" title="Close Sidebar" onClick={() => setSidebarCollapsed(true)}><X size={14} /></button>
+              </div>
             </div>
-          </div>
 
-          <div className="vscode-sidebar-content">
-            {/* EXPLORER VIEW */}
-            {activeActivity === 'explorer' && (
-              <div className="vscode-explorer">
-                <div className="explorer-section-title">
-                  <ChevronDown size={14} /> <span>WORKSPACE FOLDERS & FILES</span>
-                </div>
+            <div className="vscode-sidebar-content">
+              {/* EXPLORER VIEW */}
+              {activeActivity === 'explorer' && (
+                <div className="vscode-explorer">
+                  <div className="explorer-section-title">
+                    <ChevronDown size={14} /> <span>WORKSPACE FOLDERS & FILES</span>
+                  </div>
 
-                <div className="explorer-tree">
-                  {/* Render Folders */}
-                  {Object.entries(folders).map(([folderName, folderFiles]) => {
-                    const isCollapsed = collapsedFolders[folderName];
-                    return (
-                      <div key={folderName} className="folder-block">
-                        <div
-                          className="explorer-folder-header"
-                          onClick={() => setCollapsedFolders(c => ({ ...c, [folderName]: !c[folderName] }))}
-                        >
-                          {isCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
-                          {isCollapsed ? <Folder size={14} style={{ color: '#f59e0b' }} /> : <FolderOpen size={14} style={{ color: '#f59e0b' }} />}
-                          <span className="folder-title">{folderName}</span>
-                          <div className="item-actions">
-                            <button
-                              className="vscode-icon-btn"
-                              title="New File in Folder"
-                              onClick={(e) => addFileInFolder(folderName, e)}
-                            >
-                              <Plus size={12} />
-                            </button>
-                            <button
-                              className="vscode-icon-btn"
-                              title="Delete Folder"
-                              onClick={(e) => deleteFolder(folderName, e)}
-                            >
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Folder Files */}
-                        {!isCollapsed && (
-                          <div className="folder-children">
-                            {folderFiles.map(fileObj => (
-                              <div
-                                key={fileObj.fullPath}
-                                className={`explorer-item folder-child-item ${activeFile === fileObj.fullPath ? 'active' : ''}`}
-                                onClick={() => setActiveFile(fileObj.fullPath)}
+                  <div className="explorer-tree">
+                    {/* Render Folders */}
+                    {Object.entries(folders).map(([folderName, folderFiles]) => {
+                      const isCollapsed = collapsedFolders[folderName];
+                      return (
+                        <div key={folderName} className="folder-block">
+                          <div
+                            className="explorer-folder-header"
+                            onClick={() => setCollapsedFolders(c => ({ ...c, [folderName]: !c[folderName] }))}
+                          >
+                            {isCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                            {isCollapsed ? <Folder size={14} style={{ color: '#f59e0b' }} /> : <FolderOpen size={14} style={{ color: '#f59e0b' }} />}
+                            <span className="folder-title">{folderName}</span>
+                            <div className="item-actions">
+                              <button
+                                className="vscode-icon-btn"
+                                title="New File in Folder"
+                                onClick={(e) => addFileInFolder(folderName, e)}
                               >
-                                {getFileIcon(fileObj.name)}
-                                <span className="file-label">{fileObj.name}</span>
-                                <div className="item-actions">
-                                  <button className="vscode-icon-btn" title="Rename" onClick={(e) => startRename(fileObj.fullPath, e)}><Edit2 size={12} /></button>
-                                  <button className="vscode-icon-btn" title="Duplicate" onClick={(e) => duplicateFile(fileObj.fullPath, e)}><Copy size={12} /></button>
-                                  <button className="vscode-icon-btn" title="Delete" onClick={(e) => deleteFile(fileObj.fullPath, e)}><Trash2 size={12} /></button>
-                                </div>
-                              </div>
-                            ))}
+                                <Plus size={12} />
+                              </button>
+                              <button
+                                className="vscode-icon-btn"
+                                title="Delete Folder"
+                                onClick={(e) => deleteFolder(folderName, e)}
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
 
-                  {/* Render Root Files */}
-                  {rootFiles.map(fileName => (
-                    <div
-                      key={fileName}
-                      className={`explorer-item ${activeFile === fileName ? 'active' : ''}`}
-                      onClick={() => setActiveFile(fileName)}
-                    >
+                          {/* Folder Files */}
+                          {!isCollapsed && (
+                            <div className="folder-children">
+                              {folderFiles.map(fileObj => (
+                                <div
+                                  key={fileObj.fullPath}
+                                  className={`explorer-item folder-child-item ${activeFile === fileObj.fullPath ? 'active' : ''}`}
+                                  onClick={() => selectFile(fileObj.fullPath)}
+                                >
+                                  {getFileIcon(fileObj.name)}
+                                  <span className="file-label">{fileObj.name}</span>
+                                  <div className="item-actions">
+                                    <button className="vscode-icon-btn" title="Rename" onClick={(e) => startRename(fileObj.fullPath, e)}><Edit2 size={12} /></button>
+                                    <button className="vscode-icon-btn" title="Duplicate" onClick={(e) => duplicateFile(fileObj.fullPath, e)}><Copy size={12} /></button>
+                                    <button className="vscode-icon-btn" title="Delete" onClick={(e) => deleteFile(fileObj.fullPath, e)}><Trash2 size={12} /></button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* Render Root Files */}
+                    {rootFiles.map(fileName => (
+                      <div
+                        key={fileName}
+                        className={`explorer-item ${activeFile === fileName ? 'active' : ''}`}
+                        onClick={() => selectFile(fileName)}
+                      >
                       {getFileIcon(fileName)}
                       {editingFile === fileName ? (
                         <div style={{ display: 'flex', gap: 4, flex: 1 }} onClick={e => e.stopPropagation()}>
@@ -1218,7 +1227,8 @@ export default function VSCodeWorkspace({
             )}
           </div>
         </div>
-      )}
+      </>
+    )}
 
       {/* 3️⃣ MAIN EDITOR & TABS & TERMINAL AREA */}
       <div className="vscode-editor-pane">

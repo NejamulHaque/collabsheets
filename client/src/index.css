@@ -3335,3 +3335,516 @@ kbd { background: var(--glass); border: 1px solid var(--border-strong); border-b
   opacity: 1;
   transform: translate(2px, -2px);
 }
+
+/* ==========================================================================
+   📱 COMPREHENSIVE MOBILE RESPONSIVE ENGINE FOR 5-IN-1 SUITE
+   ========================================================================== */
+
+/* Backdrop overlays for mobile drawers */
+.vscode-sidebar-backdrop,
+.word-outline-backdrop,
+.right-sidebar-backdrop {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .vscode-sidebar-backdrop,
+  .word-outline-backdrop,
+  .right-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    z-index: 95;
+    animation: fadeIn 0.18s ease;
+  }
+}
+
+/* 1️⃣ GLOBAL OFFICE HEADER (MOBILE) */
+@media (max-width: 900px) {
+  .office-presence-rail span {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .office-top-header {
+    height: 50px;
+    padding: 0 8px;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .office-top-header::-webkit-scrollbar {
+    display: none;
+  }
+
+  .office-title-box {
+    min-width: 80px;
+    max-width: 120px;
+    flex-shrink: 1;
+  }
+  .office-title-input {
+    font-size: 13px;
+    padding: 2px 4px;
+    max-width: 100px;
+  }
+  .office-save-pill span:last-child {
+    display: none;
+  }
+
+  .office-presence-rail {
+    display: none;
+  }
+
+  .office-app-switcher {
+    margin: 0;
+    max-width: none;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 2px;
+    flex-shrink: 0;
+  }
+  .office-app-switcher::-webkit-scrollbar {
+    display: none;
+  }
+
+  .app-switch-pill {
+    padding: 4px 8px;
+    font-size: 11.5px;
+    gap: 4px;
+  }
+
+  .office-header-right {
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .office-header-right .btn-icon {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-pill-label {
+    display: none;
+  }
+  .app-switch-pill {
+    padding: 6px 8px;
+  }
+  .office-title-box {
+    max-width: 85px;
+  }
+}
+
+/* 2️⃣ VISUAL STUDIO CODE IDE (MOBILE) */
+@media (max-width: 768px) {
+  .vscode-root {
+    position: relative;
+  }
+
+  .vscode-activity-bar {
+    width: 38px;
+    padding: 4px 0;
+    gap: 4px;
+  }
+  .activity-btn {
+    width: 34px;
+    height: 34px;
+  }
+  .activity-btn svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .vscode-sidebar {
+    position: absolute;
+    left: 38px;
+    top: 0;
+    bottom: 24px;
+    width: calc(100vw - 44px);
+    max-width: 290px;
+    z-index: 100;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.65);
+    animation: slideRight 0.18s ease;
+  }
+
+  .vscode-editor-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .vscode-editor-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .vscode-tab {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+
+  .vscode-bottom-dock {
+    max-height: 40vh;
+  }
+  .dock-header {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .dock-header::-webkit-scrollbar {
+    display: none;
+  }
+
+  .vscode-status-bar {
+    overflow-x: auto;
+    scrollbar-width: none;
+    font-size: 10.5px;
+    padding: 0 6px;
+  }
+  .vscode-status-bar::-webkit-scrollbar {
+    display: none;
+  }
+  .status-item:nth-child(n+4) {
+    display: none;
+  }
+}
+
+@keyframes slideRight {
+  from { transform: translateX(-15px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* 3️⃣ WORD 365 SUITE (MOBILE) */
+@media (max-width: 768px) {
+  .word-ribbon-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 0 4px;
+  }
+  .word-ribbon-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .word-ribbon-tab {
+    padding: 6px 10px;
+    font-size: 11.5px;
+    white-space: nowrap;
+  }
+
+  .word-ribbon-body {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 6px 8px;
+    min-height: 52px;
+  }
+  .word-ribbon-body::-webkit-scrollbar {
+    display: none;
+  }
+  .word-ribbon-chunk {
+    padding: 0 6px;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .word-ruler {
+    display: none !important;
+  }
+
+  .word-outline-pane {
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 270px;
+    max-width: 85vw;
+    z-index: 100;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
+    background: var(--bg);
+    animation: slideRight 0.18s ease;
+  }
+
+  .word-canvas-area {
+    padding: 0 !important;
+  }
+
+  .word-page-scroller {
+    padding: 10px 6px 40px !important;
+    display: flex;
+    justify-content: center;
+  }
+
+  .word-page-sheet {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: auto !important;
+    padding: 20px 14px 40px !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08) !important;
+    border-radius: 6px !important;
+    margin: 0 auto !important;
+    transform: none !important;
+  }
+
+  .word-page-separator {
+    display: none;
+  }
+
+  .word-status-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    font-size: 10.5px;
+    padding: 0 8px;
+  }
+  .word-status-bar::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* 4️⃣ EXCEL 365 SUITE (MOBILE) */
+@media (max-width: 768px) {
+  .excel-ribbon-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .excel-ribbon-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .excel-ribbon-tab {
+    padding: 6px 10px;
+    font-size: 11.5px;
+    white-space: nowrap;
+  }
+
+  .excel-ribbon-body {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 6px 8px;
+    min-height: 52px;
+  }
+  .excel-ribbon-body::-webkit-scrollbar {
+    display: none;
+  }
+
+  .excel-fx-bar {
+    padding: 4px 6px;
+    gap: 4px;
+    overflow-x: hidden;
+  }
+  .fx-name-box {
+    min-width: 38px;
+    font-size: 11px;
+    padding: 3px 4px;
+  }
+  .excel-fx-input {
+    font-size: 12px;
+    min-width: 0;
+  }
+
+  .excel-grid-viewport {
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .excel-sheet-tabs-bar {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 0 4px;
+  }
+  .excel-sheet-tabs-bar::-webkit-scrollbar {
+    display: none;
+  }
+  .excel-status-stats {
+    display: none !important;
+  }
+}
+
+/* 5️⃣ POWERPOINT 365 SUITE (MOBILE) */
+@media (max-width: 768px) {
+  .ppt-ribbon-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .ppt-ribbon-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .ppt-ribbon-tab {
+    padding: 6px 10px;
+    font-size: 11.5px;
+    white-space: nowrap;
+  }
+
+  .ppt-ribbon-body {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 6px 8px;
+    min-height: 52px;
+  }
+  .ppt-ribbon-body::-webkit-scrollbar {
+    display: none;
+  }
+
+  .ppt-workspace-body {
+    flex-direction: column-reverse;
+    overflow: hidden;
+  }
+
+  .ppt-filmstrip {
+    display: flex;
+    flex-direction: row;
+    height: 74px;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-shrink: 0;
+    padding: 6px 8px;
+    gap: 8px;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    background: var(--glass);
+  }
+  .ppt-filmstrip::-webkit-scrollbar {
+    display: none;
+  }
+  .ppt-thumb-card {
+    min-width: 88px;
+    width: 88px;
+    height: 58px;
+    padding: 4px;
+    flex-shrink: 0;
+  }
+  .thumb-title {
+    font-size: 10px;
+  }
+  .ppt-thumb-add {
+    min-width: 74px;
+    height: 58px;
+    font-size: 11px;
+    padding: 4px;
+    flex-shrink: 0;
+  }
+
+  .ppt-stage-area {
+    flex: 1;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .ppt-slide-canvas {
+    width: 100% !important;
+    max-width: 100% !important;
+    aspect-ratio: 16 / 9 !important;
+    height: auto !important;
+    min-height: unset !important;
+    padding: 12px 14px !important;
+    border-radius: 8px !important;
+  }
+
+  .ppt-slide-title-input {
+    font-size: 16px !important;
+    margin-bottom: 6px !important;
+  }
+  .ppt-slide-body-input {
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+  }
+}
+
+/* 6️⃣ INTERACTIVE WHITEBOARD (MOBILE) */
+@media (max-width: 768px) {
+  .wb-toolbar {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    max-width: calc(100vw - 16px);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    padding: 6px 8px;
+    z-index: 50;
+    border-radius: 12px;
+  }
+  .wb-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+  .wb-tool-btn {
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+  }
+  .wb-color-palette {
+    flex-shrink: 0;
+  }
+  .wb-size-slider {
+    width: 60px;
+    flex-shrink: 0;
+  }
+
+  .wb-bottom-bar {
+    padding: 0 8px;
+    font-size: 10.5px;
+  }
+  .wb-status-left span:nth-child(n+3) {
+    display: none;
+  }
+}
+
+/* 7️⃣ FLOATING COPILOT & SIDEBARS (MOBILE) */
+@media (max-width: 768px) {
+  .ai-fab {
+    bottom: 68px !important;
+    left: 12px !important;
+    width: 42px !important;
+    height: 42px !important;
+    z-index: 250 !important;
+  }
+
+  .float-dock {
+    bottom: 68px !important;
+    right: 12px !important;
+    width: 42px !important;
+    height: 42px !important;
+    z-index: 250 !important;
+  }
+
+  .irus-copilot-window {
+    left: 8px !important;
+    right: 8px !important;
+    bottom: 60px !important;
+    width: auto !important;
+    max-width: calc(100vw - 16px) !important;
+    height: min(490px, 76vh) !important;
+    border-radius: 16px !important;
+    z-index: 350 !important;
+  }
+
+  .right-sidebar {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: min(320px, 86vw);
+    z-index: 400;
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.5);
+    animation: slideLeft 0.18s ease;
+  }
+}
+
+@keyframes slideLeft {
+  from { transform: translateX(15px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
