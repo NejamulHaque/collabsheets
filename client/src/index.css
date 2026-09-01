@@ -3591,15 +3591,33 @@ kbd { background: var(--glass); border: 1px solid var(--border-strong); border-b
     display: none;
   }
 
+  .wsb-desktop-only {
+    display: none !important;
+  }
+
   .word-status-bar {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    height: 24px !important;
+    min-height: 24px !important;
+    line-height: 24px !important;
+    padding: 0 10px !important;
+    font-size: 11px !important;
+    white-space: nowrap !important;
+    overflow-x: auto !important;
+    z-index: 50 !important;
+    position: relative !important;
     scrollbar-width: none;
-    font-size: 10.5px;
-    padding: 0 8px;
   }
   .word-status-bar::-webkit-scrollbar {
     display: none;
+  }
+  .wsb-left {
+    gap: 8px !important;
+    white-space: nowrap !important;
+  }
+  .wsb-item {
+    white-space: nowrap !important;
+    font-size: 11px !important;
+    flex-shrink: 0 !important;
   }
 }
 
@@ -3806,25 +3824,44 @@ kbd { background: var(--glass); border: 1px solid var(--border-strong); border-b
 /* 7️⃣ FLOATING COPILOT & SIDEBARS (MOBILE) */
 @media (max-width: 768px) {
   .ai-fab {
-    bottom: 68px !important;
-    left: 12px !important;
-    width: 42px !important;
-    height: 42px !important;
-    z-index: 250 !important;
+    position: fixed !important;
+    left: 14px !important;
+    bottom: 36px !important;
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 50% !important;
+    z-index: 160 !important;
+    box-shadow: 0 4px 16px rgba(124, 92, 255, 0.45) !important;
   }
 
   .float-dock {
-    bottom: 68px !important;
-    right: 12px !important;
-    width: 42px !important;
-    height: 42px !important;
-    z-index: 250 !important;
+    position: fixed !important;
+    right: 14px !important;
+    bottom: 36px !important;
+    width: 38px !important;
+    height: 38px !important;
+    border-radius: 50% !important;
+    z-index: 160 !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  .call-fab {
+    position: fixed !important;
+    right: 14px !important;
+    bottom: 84px !important;
+    height: 36px !important;
+    min-width: 76px !important;
+    padding: 6px 12px !important;
+    font-size: 12px !important;
+    border-radius: 999px !important;
+    z-index: 160 !important;
+    box-shadow: 0 4px 16px rgba(16, 185, 129, 0.45) !important;
   }
 
   .irus-copilot-window {
     left: 8px !important;
     right: 8px !important;
-    bottom: 60px !important;
+    bottom: 54px !important;
     width: auto !important;
     max-width: calc(100vw - 16px) !important;
     height: min(490px, 76vh) !important;

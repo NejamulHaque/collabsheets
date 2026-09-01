@@ -225,8 +225,8 @@ export default function WordEditor({
         <div className="wsb-left">
           <span className="wsb-item">Page 1 of {totalPages}</span>
           <span className="wsb-item">{words} words</span>
-          <span className="wsb-item">{chars} characters</span>
-          <span className="wsb-item"><SpellCheck size={13} /> English (US)</span>
+          <span className="wsb-item wsb-desktop-only">{chars} characters</span>
+          <span className="wsb-item wsb-desktop-only"><SpellCheck size={13} /> English (US)</span>
           {isEditingHF && (
             <span className="badge badge-pro" style={{ marginLeft: 8, background: '#ffffff', color: '#185abd' }}>
               Header & Footer Editing
@@ -245,36 +245,38 @@ export default function WordEditor({
             </button>
           )}
 
-          <button
-            className={`wsb-mode-btn ${showOutline ? 'active' : ''}`}
-            title="Toggle Outline Navigation"
-            onClick={() => setShowOutline(o => !o)}
-          >
-            <Layers size={13} />
-          </button>
-          <button
-            className={`wsb-mode-btn ${viewMode === 'print' ? 'active' : ''}`}
-            title="Print Layout"
-            onClick={() => setViewMode('print')}
-          >
-            <FileText size={13} />
-          </button>
-          <button
-            className={`wsb-mode-btn ${viewMode === 'web' ? 'active' : ''}`}
-            title="Web Layout"
-            onClick={() => setViewMode('web')}
-          >
-            <Layers size={13} />
-          </button>
-          <button
-            className={`wsb-mode-btn ${viewMode === 'focus' ? 'active' : ''}`}
-            title="Focus Mode"
-            onClick={() => setViewMode(v => v === 'focus' ? 'print' : 'focus')}
-          >
-            <Eye size={13} />
-          </button>
+          <div className="wsb-modes-wrap wsb-desktop-only" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <button
+              className={`wsb-mode-btn ${showOutline ? 'active' : ''}`}
+              title="Toggle Outline Navigation"
+              onClick={() => setShowOutline(o => !o)}
+            >
+              <Layers size={13} />
+            </button>
+            <button
+              className={`wsb-mode-btn ${viewMode === 'print' ? 'active' : ''}`}
+              title="Print Layout"
+              onClick={() => setViewMode('print')}
+            >
+              <FileText size={13} />
+            </button>
+            <button
+              className={`wsb-mode-btn ${viewMode === 'web' ? 'active' : ''}`}
+              title="Web Layout"
+              onClick={() => setViewMode('web')}
+            >
+              <Layers size={13} />
+            </button>
+            <button
+              className={`wsb-mode-btn ${viewMode === 'focus' ? 'active' : ''}`}
+              title="Focus Mode"
+              onClick={() => setViewMode(v => v === 'focus' ? 'print' : 'focus')}
+            >
+              <Eye size={13} />
+            </button>
+          </div>
 
-          <div className="wsb-zoom-control">
+          <div className="wsb-zoom-control wsb-desktop-only">
             <button className="wsb-icon-btn" onClick={() => setPage({ ...page, zoom: Math.max(50, page.zoom - 10) })}>
               <ZoomOut size={12} />
             </button>
