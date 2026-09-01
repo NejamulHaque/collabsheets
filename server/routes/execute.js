@@ -52,6 +52,26 @@ const PISTON_LANG_MAP = {
   kotlin: { language: 'kotlin', version: '1.8.20', file: 'Main.kt' },
 };
 
+// Find available system binary for language
+function findBinary(candidates) {
+  const customPath = '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/opt/homebrew/sbin:/usr/sbin:/sbin:' + (process.env.PATH || '');
+  const dirs = customPath.split(':').filter(Boolean);
+
+  for (const name of candidates) {
+    if (path.isAbsolute(name) && fs.existsSync(name)) return name;
+    for (const dir of dirs) {
+      const full = path.join(dir, name);
+      if (fs.existsSync(full)) {
+        try {
+          fs.accessSync(full, fs.constants.X_OK);
+          return full;
+        } catch {}
+      }
+    }
+  }
+  return null;
+}
+
 // 1️⃣ GET /execute/runtimes
 router.get('/runtimes', (req, res) => {
   res.json(Object.entries(RUNTIMES).map(([language, version]) => ({ language, version })));
@@ -60,7 +80,7 @@ router.get('/runtimes', (req, res) => {
 // 2️⃣ GET /execute/history/:docId
 router.get('/history/:docId', (req, res) => res.json([]));
 
-// 3️⃣ POST /execute (Dual Local + Global Cloud Code Runner)
+// 3️⃣ POST /execute (Dual High-Speed Local Engine + 60+ Cloud Fallback)
 router.post('/', async (req, res) => {
   const { language, code, stdin = '' } = req.body;
   const langKey = (language || 'python').toLowerCase();
@@ -70,39 +90,83 @@ router.post('/', async (req, res) => {
   }
 
   const startTime = Date.now();
+  const env = {
+    ...process.env,
+    PATH: '/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/opt/homebrew/sbin:/usr/sbin:/sbin:' + (process.env.PATH || ''),
+    PYTHONUNBUFFERED: '1',
+    FORCE_COLOR: '0',
+    NODE_DISABLE_COLORS: '1',
+  };
 
-  // Try Local Execution first for Python / JavaScript / Bash
-  if (['python', 'javascript', 'bash', 'sh'].includes(langKey)) {
+  // 1️⃣ LOCAL RUNTIME ATTEMPT (Instant & Secure)
+  let localCmd = null;
+  let fileName = 'main.txt';
+  let compileCmd = null;
+  let compileArgs = [];
+
+  if (langKey === 'python') {
+    localCmd = findBinary(['/opt/homebrew/bin/python3', '/usr/local/bin/python3', '/usr/bin/python3', 'python3', 'python']);
+    fileName = 'main.py';
+  } else if (langKey === 'javascript' || langKey === 'node') {
+    localCmd = findBinary(['/opt/homebrew/bin/node', '/usr/local/bin/node', '/usr/bin/node', 'node']);
+    fileName = 'main.js';
+  } else if (langKey === 'bash' || langKey === 'sh') {
+    localCmd = findBinary(['/bin/bash', '/usr/bin/bash', 'bash', 'sh']);
+    fileName = 'main.sh';
+  } else if (langKey === 'c') {
+    const gcc = findBinary(['/opt/homebrew/bin/gcc', '/usr/bin/gcc', 'gcc', 'clang']);
+    if (gcc) {
+      compileCmd = gcc;
+      fileName = 'main.c';
+    }
+  } else if (langKey === 'c++' || langKey === 'cpp') {
+    const gpp = findBinary(['/opt/homebrew/bin/g++', '/usr/bin/g++', 'g++', 'clang++']);
+    if (gpp) {
+      compileCmd = gpp;
+      fileName = 'main.cpp';
+    }
+  }
+
+  if (localCmd || compileCmd) {
     try {
       const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-exec-'));
-      let fileName = 'main.py';
-      let command = process.platform === 'win32' ? 'python' : 'python3';
-      let args = [];
-
-      if (langKey === 'python') {
-        fileName = 'main.py';
-        command = process.platform === 'win32' ? 'python' : 'python3';
-      } else if (langKey === 'javascript') {
-        fileName = 'main.js';
-        command = 'node';
-      } else if (langKey === 'bash' || langKey === 'sh') {
-        fileName = 'main.sh';
-        command = 'bash';
-      }
-
       const filePath = path.join(tmpDir, fileName);
       fs.writeFileSync(filePath, code);
-      args = [filePath];
 
       let stdout = '';
       let stderr = '';
       let exitCode = 0;
+      let localRan = false;
 
-      const child = spawn(command, args, {
-        cwd: tmpDir,
-        env: { ...process.env, PYTHONUNBUFFERED: '1', FORCE_COLOR: '0' },
-        timeout: 12000,
-      });
+      // Handle C / C++ Compilation
+      if (compileCmd) {
+        const outBin = path.join(tmpDir, 'program');
+        const compileProc = spawn(compileCmd, [filePath, '-o', outBin], { cwd: tmpDir, env, timeout: 8000 });
+        
+        let cErr = '';
+        compileProc.stderr.on('data', d => { cErr += d.toString(); });
+        const compSuccess = await new Promise(resolve => {
+          compileProc.on('close', c => resolve(c === 0));
+          compileProc.on('error', () => resolve(false));
+        });
+
+        if (!compSuccess) {
+          try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+          return res.json({
+            run: {
+              stdout: '',
+              stderr: (cErr || 'Compilation failed.').trim(),
+              code: 1,
+              runtime: Date.now() - startTime,
+              provider: 'local-gcc',
+            },
+          });
+        }
+        localCmd = outBin;
+      }
+
+      const args = compileCmd ? [] : [filePath];
+      const child = spawn(localCmd, args, { cwd: tmpDir, env, timeout: 12000 });
 
       if (stdin) {
         child.stdin.write(stdin);
@@ -112,8 +176,11 @@ router.post('/', async (req, res) => {
       child.stdout.on('data', (d) => { stdout += d.toString(); });
       child.stderr.on('data', (d) => { stderr += d.toString(); });
 
-      const localRan = await new Promise((resolve) => {
-        child.on('close', (c) => resolve(true));
+      localRan = await new Promise((resolve) => {
+        child.on('close', (c) => {
+          exitCode = c ?? 0;
+          resolve(true);
+        });
         child.on('error', () => resolve(false));
       });
 
@@ -122,18 +189,20 @@ router.post('/', async (req, res) => {
       if (localRan) {
         return res.json({
           run: {
-            stdout: stdout.trim(),
-            stderr: stderr.trim(),
+            stdout: stdout.trimEnd(),
+            stderr: stderr.trimEnd(),
             code: exitCode,
             runtime: Date.now() - startTime,
-            provider: 'local-sandbox',
+            provider: 'local-engine',
           },
         });
       }
-    } catch {}
+    } catch (e) {
+      console.warn('Local execution error:', e.message);
+    }
   }
 
-  // Cloud Runner Fallback for all 60+ languages via Piston API
+  // 2️⃣ CLOUD RUNNER (Piston 60+ Languages API)
   const pistonConfig = PISTON_LANG_MAP[langKey] || { language: langKey, version: '*', file: `main.${langKey}` };
 
   try {
@@ -146,7 +215,7 @@ router.post('/', async (req, res) => {
         files: [{ name: pistonConfig.file, content: code }],
         stdin,
       }),
-      signal: AbortSignal.timeout(15000),
+      signal: AbortSignal.timeout(12000),
     });
 
     if (pistonRes.ok) {
@@ -157,11 +226,11 @@ router.post('/', async (req, res) => {
 
       return res.json({
         run: {
-          stdout: stdout.trim(),
-          stderr: stderr.trim(),
+          stdout: stdout.trimEnd(),
+          stderr: stderr.trimEnd(),
           code: exitCode,
           runtime: Date.now() - startTime,
-          provider: 'piston-cloud',
+          provider: 'cloud-piston',
         },
       });
     }
@@ -169,14 +238,15 @@ router.post('/', async (req, res) => {
     console.warn('Piston cloud runner unavailable:', err.message);
   }
 
-  // Pure in-memory JS fallback if running JavaScript
-  if (langKey === 'javascript') {
+  // 3️⃣ IN-MEMORY SANDBOX FALLBACK (JavaScript)
+  if (langKey === 'javascript' || langKey === 'js') {
     try {
       const logs = [];
       const customConsole = {
-        log: (...args) => logs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')),
-        error: (...args) => logs.push('[ERROR] ' + args.join(' ')),
-        warn: (...args) => logs.push('[WARN] ' + args.join(' ')),
+        log: (...args) => logs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' ')),
+        error: (...args) => logs.push('[Error] ' + args.join(' ')),
+        warn: (...args) => logs.push('[Warn] ' + args.join(' ')),
+        info: (...args) => logs.push('[Info] ' + args.join(' ')),
       };
       const runFn = new Function('console', code);
       runFn(customConsole);
@@ -187,7 +257,7 @@ router.post('/', async (req, res) => {
           stderr: '',
           code: 0,
           runtime: Date.now() - startTime,
-          provider: 'js-sandbox',
+          provider: 'node-sandbox',
         },
       });
     } catch (e) {
@@ -197,17 +267,20 @@ router.post('/', async (req, res) => {
           stderr: String(e.stack || e.message),
           code: 1,
           runtime: Date.now() - startTime,
+          provider: 'node-sandbox',
         },
       });
     }
   }
 
+  // 4️⃣ DESCRIPTIVE RUNTIME STATUS
   res.json({
     run: {
       stdout: '',
-      stderr: `Execution finished. Could not connect to remote compiler for "${language}".`,
+      stderr: `Execution notice: Local compiler/interpreter for "${language}" is not currently in system PATH, and cloud execution timed out.\n\nTip: For instant local execution on your machine, ensure python3 / gcc is installed or switch language to JavaScript.`,
       code: 1,
       runtime: Date.now() - startTime,
+      provider: 'offline-notice',
     },
   });
 });

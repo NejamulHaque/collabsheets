@@ -180,6 +180,13 @@ export default function VSCodeWorkspace({
   const [execHistory, setExecHistory] = useState([]);
   const terminalEndRef = useRef(null);
 
+  // Auto-scroll terminal on new output
+  useEffect(() => {
+    if (bottomTab === 'terminal' && bottomDockOpen) {
+      terminalEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [terminalLogs, bottomTab, bottomDockOpen]);
+
   // Git / Versions
   const [gitCommitMsg, setGitCommitMsg] = useState('');
   const [gitVersions, setGitVersions] = useState([]);
@@ -493,16 +500,18 @@ export default function VSCodeWorkspace({
 
       const logs = [`$ ${lang} ${targetFile}`];
       if (data.run?.stdout) logs.push(data.run.stdout);
-      if (data.run?.stderr) logs.push(`[stderr] ${data.run.stderr}`);
+      if (data.run?.stderr) logs.push(data.run.stderr);
       if (!data.run?.stdout && !data.run?.stderr) {
         logs.push(`[Process finished with exit code ${data.run?.code ?? 0}]`);
       } else {
-        logs.push(`[Done] Process exited with code ${data.run?.code ?? 0} in ${elapsed}ms (${data.run?.provider || 'cloud'})`);
+        const exitMsg = (data.run?.code === 0)
+          ? `[Done] Process exited with code 0 in ${elapsed}ms (${data.run?.provider || 'local-engine'})`
+          : `[Done] Process exited with code ${data.run?.code ?? 1} in ${elapsed}ms (${data.run?.provider || 'local-engine'})`;
+        logs.push(exitMsg);
       }
 
       setTerminalLogs(prev => [...prev, ...logs]);
 
-      if (data.run?.stderr) setBottomTab('problems');
       if (docId) {
         API.get(`/execute/history/${docId}`).then(r => setExecHistory(r.data || [])).catch(() => {});
       }
@@ -1354,9 +1363,24 @@ export default function VSCodeWorkspace({
               {bottomTab === 'terminal' && (
                 <div className="dock-terminal-view">
                   <div className="terminal-logs-scroll">
-                    {terminalLogs.map((log, i) => (
-                      <div key={i} className="terminal-line">{log}</div>
-                    ))}
+                    {terminalLogs.map((log, i) => {
+                      const isErr = log.startsWith('[Error]') || log.startsWith('Traceback') || log.startsWith('NameError') || log.startsWith('SyntaxError') || log.startsWith('TypeError') || log.startsWith('IndexError') || log.startsWith('KeyError') || log.includes('Error:') || log.startsWith('❌');
+                      const isCmd = log.startsWith('collabsheets@') || log.startsWith('$ ');
+                      const isSuccess = log.startsWith('[Done]') || log.startsWith('✓');
+                      return (
+                        <div
+                          key={i}
+                          className={`terminal-line ${isErr ? 'err' : ''} ${isCmd ? 'cmd' : ''} ${isSuccess ? 'success' : ''}`}
+                          style={{
+                            color: isErr ? '#f87171' : isCmd ? '#38bdf8' : isSuccess ? '#4ade80' : '#e2e8f0',
+                            padding: '1px 0',
+                            lineHeight: 1.45,
+                          }}
+                        >
+                          {log}
+                        </div>
+                      );
+                    })}
                     <div ref={terminalEndRef} />
                   </div>
 
