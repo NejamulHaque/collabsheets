@@ -23,6 +23,7 @@ import { breakpointsExt, getBreakpointLines } from './Breakpoints';
 import { todoHighlight } from '../extensions/todoHighlight';
 import { reviewCode } from './reviewCode';
 import { API } from '../store/authStore';
+import { executeUniversalCode } from '../utils/codeRunner';
 
 // 60+ Language database
 export const ALL_LANGUAGES = [
@@ -477,7 +478,7 @@ export default function VSCodeWorkspace({
     return { folders: fMap, rootFiles: rFiles };
   }, [filesList]);
 
-  // Run Code with 60+ Language Cloud & Local Support
+  // Run Code with 60+ Language Cloud & Local & In-Browser Support
   const runCode = async (targetFile = activeFile) => {
     setRunning(true);
     setBottomDockOpen(true);
@@ -487,26 +488,26 @@ export default function VSCodeWorkspace({
       const ext = targetFile.split('.').pop().toLowerCase();
       const langMatch = ALL_LANGUAGES.find(l => l.ext === ext);
       const lang = langMatch ? langMatch.id : codeLang;
-      const startT = Date.now();
 
-      const { data } = await API.post('/execute', {
+      const { run, elapsed } = await executeUniversalCode({
         language: lang,
         code,
+        fileName: targetFile,
         stdin: '',
         documentId: docId,
       });
-      const elapsed = Date.now() - startT;
-      setExecResult(data);
+
+      setExecResult({ run, executionTime: elapsed });
 
       const logs = [`$ ${lang} ${targetFile}`];
-      if (data.run?.stdout) logs.push(data.run.stdout);
-      if (data.run?.stderr) logs.push(data.run.stderr);
-      if (!data.run?.stdout && !data.run?.stderr) {
-        logs.push(`[Process finished with exit code ${data.run?.code ?? 0}]`);
+      if (run?.stdout) logs.push(run.stdout);
+      if (run?.stderr) logs.push(run.stderr);
+      if (!run?.stdout && !run?.stderr) {
+        logs.push(`[Process finished with exit code ${run?.code ?? 0}]`);
       } else {
-        const exitMsg = (data.run?.code === 0)
-          ? `[Done] Process exited with code 0 in ${elapsed}ms (${data.run?.provider || 'local-engine'})`
-          : `[Done] Process exited with code ${data.run?.code ?? 1} in ${elapsed}ms (${data.run?.provider || 'local-engine'})`;
+        const exitMsg = (run?.code === 0)
+          ? `[Done] Process exited with code 0 in ${elapsed}ms (${run?.provider || 'local-engine'})`
+          : `[Done] Process exited with code ${run?.code ?? 1} in ${elapsed}ms (${run?.provider || 'local-engine'})`;
         logs.push(exitMsg);
       }
 
